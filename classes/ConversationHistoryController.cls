@@ -10,7 +10,6 @@ global with sharing class ConversationHistoryController {
                                                  	AND Was_Sent__c  = true
                                                  Order by Sent_Date_Time__c ];
         return messages;
-           
     }
     
     @AuraEnabled
