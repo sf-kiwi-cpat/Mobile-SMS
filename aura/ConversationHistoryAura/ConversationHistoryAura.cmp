@@ -1,0 +1,95 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:hasRecordId" access="global" controller="ConversationHistoryController">
+    <lightning:empApi aura:id="empApi" />
+
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}"/>
+    <aura:handler event="aura:doneRendering" action="{!c.afterRender}"/>
+    
+    <!-- 
+		This destroy event is fired when a component is destroyed.
+        Handle this event if you need to do custom cleanup when a component is destroyed. 
+		Currently this throws an error when closing the page this component is on with this left in. 
+	-->
+    <!--aura:handler name="destroy" value="{!this}" action="{!c.unsubscribe}"/ -->        
+    
+    <!-- This event will be caught when something else on the page triggers it - e.g. a Flow is executed to send a SMS
+		 Works on both Mobile and Desktop -->
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <!-- Save the reference of current subscription, which can be unsubscribe later on -->
+    <aura:attribute name="subscription" type="Object"/>
+    <!-- A list of all of the messages between this record and the organization -->
+    <aura:attribute name="messages" type="Messaging_Message__c[]"/>
+    <!-- The list of attachments for all messages for this contact -->
+    <aura:attribute name="attachments" type="List"/>
+    
+    <!-- Used when a new message comes in to pass between callback functions, to check for attachments on a new message -->
+    <aura:attribute name="newMessagingSessionId" type="String"/>
+    
+    <!-- This section is just for a header, and means the header persists when you scroll -->
+    <lightning:card class="cardHeader" iconName="standard:sms" title="Conversation History">
+        <aura:set attribute="actions">
+            <lightning:buttonIcon iconName="utility:refresh" variant="border-filled" alternativeText="Refresh" onclick="{!c.refresh}" class="rotate" />
+        </aura:set>
+    </lightning:card>
+    
+    <!-- to change the height of this component, update the scrollerSize css class -->
+    <ui:scrollerWrapper class="scrollerSize" aura:id="scrollerId" >
+        <lightning:card class="cardHeight">
+            <aura:if isTrue="{!empty(v.messages)}">
+                <!-- This is displayed if there is no conversation history, otherwise it will show the list of messages -->
+                <div class="slds-align_absolute-center" style="height:5rem">No Conversation History yet</div>
+                <aura:set attribute="else">
+                    <div class="slds-p-horizontal_medium">
+                        <section role="log" class="slds-chat">
+                            <ul class="slds-chat-list">
+                                <aura:iteration items="{!v.messages}" var="message">
+                                    <aura:if isTrue="{!message.Is_Inbound__c}">
+                                        <li class="slds-chat-listitem slds-chat-listitem_inbound">
+                                            <div class="slds-chat-message">
+                                                <!-- span class="slds-avatar">
+                                                            <img alt="{!message.Sent_By__c}" src="/example/url/to/customer/pic" title="{!message.Sent_By__c}" />
+                                                        </span -->
+                                                <div class="slds-chat-message__body">
+                                                    <aura:if isTrue="{!message.Has_Attachment__c}">
+                                                        <!-- A ineffeciency here as we iterate over all attachments every time, but the numbers should be 
+                                                            relatively low so that this should stay relatively fast. No way to get values out a of a map dynamically to speed this up --> 
+                                                        <aura:iteration items="{!v.attachments}" var="mapEntry" indexVar="key">
+                                                            <aura:if isTrue="{!message.Messaging_Session_Id__c == mapEntry.key}">
+                                                                <lightning:fileCard fileId="{!mapEntry.value}" hideDescription="true"/>
+                                                            </aura:if>
+                                                        </aura:iteration>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!not(empty(message.Message_Content__c))}" >
+                                                        <div class="slds-chat-message__text slds-chat-message__text_inbound">
+                                                            <span>{!message.Message_Content__c}</span>
+                                                        </div>
+                                                    </aura:if>
+                                                    <div class="slds-chat-message__meta" aria-label="{! 'said ' + message.Sent_By__c}">{!message.Sent_By__c} • <lightning:formattedDateTime value="{!message.Sent_Date_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" timeZoneName="short" hour12="true"/></div>
+                                                </div>
+                                            </div>
+                                        </li>
+                                        <aura:set attribute="else">
+                                            <li class="slds-chat-listitem slds-chat-listitem_outbound">
+                                                <div class="slds-chat-message">
+                                                    <!--span class="slds-avatar">
+                                                                <img alt="{!message.Sent_By__c}" src="/example/url/to/agentpic" title="{!message.Sent_By__c}" />
+                                                            </span -->                                                             
+                                                    <div class="slds-chat-message__body">
+                                                        <div class="slds-chat-message__text slds-chat-message__text_outbound">
+                                                            <span>{!message.Message_Content__c}</span>
+                                                        </div>                                                                                                                                                                                       
+                                                        <div class="slds-chat-message__meta" aria-label="{! 'said ' + message.Sent_By__c}">{!message.Sent_By__c} • <lightning:formattedDateTime value="{!message.Sent_Date_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" timeZoneName="short" hour12="true"/></div>	
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </aura:set>
+                                    </aura:if>
+                                </aura:iteration>                   
+                            </ul>
+                        </section>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </lightning:card>
+    </ui:scrollerWrapper>
+</aura:component>

@@ -1,0 +1,8 @@
+.THIS.scrollerSize {
+    max-height: 450px;
+}
+
+/* Rotates the refresh button on click */
+.THIS .rotate:active {
+	animation: rotate .4s;
+}
